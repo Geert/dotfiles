@@ -53,6 +53,18 @@ safe_link() {
 echo "→ Setting up Claude Code configuration..."
 safe_link "$DOTFILES_DIR/.claude/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
 
+# Slash commands (maakt /dotfiles beschikbaar in Claude Code)
+mkdir -p "$HOME/.claude"
+if [ -L "$HOME/.claude/commands" ]; then
+  echo "  ✓ ~/.claude/commands (already linked)"
+elif [ -d "$HOME/.claude/commands" ] && [ ! -L "$HOME/.claude/commands" ]; then
+  echo "  ⚠ ~/.claude/commands bestaat al als directory — handmatig samenvoegen nodig"
+  echo "     ls $HOME/.claude/commands"
+else
+  ln -sf "$DOTFILES_DIR/.claude/commands" "$HOME/.claude/commands"
+  echo "  ✓ ~/.claude/commands → dotfiles (slash commands beschikbaar)"
+fi
+
 # ── AppFabriek Rails Template ─────────────────────────────────────────────────
 
 echo "→ AppFabriek Rails Template..."
