@@ -1,18 +1,40 @@
 #!/usr/bin/env bash
 # AppFabriek dotfiles installer
 # Safe to run on machines with existing dotfiles — backs up before symlinking.
+#
+# Usage:
+#   bash <(curl -fsSL https://raw.githubusercontent.com/Geert/dotfiles/main/install.sh)
+#   ~/code/dotfiles/install.sh
 
 set -e
 
-DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DOTFILES_REPO="https://github.com/Geert/dotfiles.git"
+DOTFILES_DIR="$HOME/code/dotfiles"
 BACKUP_DIR="$HOME/.dotfiles-backup-$(date +%Y%m%d-%H%M%S)"
+
+# ── Bootstrap: clone dotfiles repo als dat nog niet gedaan is ─────────────────
+# Wanneer dit script via curl pipe draait, is BASH_SOURCE[0] een /dev/fd pad.
+# In dat geval klonen we de repo eerst en voeren dan de lokale versie uit.
+
+if [[ "${BASH_SOURCE[0]}" == /dev/fd/* ]] || [[ "${BASH_SOURCE[0]}" == /proc/* ]]; then
+  if [ -d "$DOTFILES_DIR" ]; then
+    echo "→ Dotfiles updaten..."
+    git -C "$DOTFILES_DIR" pull --quiet
+    echo "  ✓ Bijgewerkt"
+  else
+    echo "→ Dotfiles clonen..."
+    mkdir -p "$HOME/code"
+    git clone "$DOTFILES_REPO" "$DOTFILES_DIR"
+    echo "  ✓ Gecloned naar $DOTFILES_DIR"
+  fi
+  echo ""
+  exec bash "$DOTFILES_DIR/install.sh"
+fi
 
 # ── GitHub SSH host key ───────────────────────────────────────────────────────
 # GitHub rotated their RSA key in March 2023. Fix stale known_hosts entries.
 
 if ssh-keygen -F github.com 2>/dev/null | grep -q "RSA"; then
-  CURRENT=$(ssh-keygen -F github.com 2>/dev/null | grep -A1 "github.com" | tail -1)
-  # Known good GitHub RSA fingerprint (post-March 2023 rotation)
   if ! ssh-keygen -l -f <(ssh-keygen -F github.com 2>/dev/null) 2>/dev/null | grep -q "uNiVztksCsDhcc0u9e8BujQXVUpKZIDTMczCvj3tD2s"; then
     echo "→ Oud GitHub SSH host key gevonden — wordt bijgewerkt..."
     ssh-keygen -R github.com 2>/dev/null
@@ -33,7 +55,6 @@ safe_link() {
   local dest="$2"
 
   if [ -L "$dest" ]; then
-    # Already a symlink — check if it already points to dotfiles
     if [ "$(readlink "$dest")" = "$src" ]; then
       echo "  ✓ $dest (already linked)"
       return
@@ -70,11 +91,11 @@ safe_link() {
 # ── Claude Code ───────────────────────────────────────────────────────────────
 
 echo "→ Setting up Claude Code configuration..."
+mkdir -p "$HOME/.claude"
 safe_link "$DOTFILES_DIR/.claude/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
 
-# Slash commands (maakt /dotfiles beschikbaar in Claude Code)
-mkdir -p "$HOME/.claude"
-if [ -L "$HOME/.claude/commands" ]; then
+# Slash commands — symlink de hele commands directory
+if [ -L "$HOME/.claude/commands" ] && [ "$(readlink "$HOME/.claude/commands")" = "$DOTFILES_DIR/.claude/commands" ]; then
   echo "  ✓ ~/.claude/commands (already linked)"
 elif [ -d "$HOME/.claude/commands" ] && [ ! -L "$HOME/.claude/commands" ]; then
   echo "  ⚠ ~/.claude/commands bestaat al als directory — handmatig samenvoegen nodig"
