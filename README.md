@@ -8,7 +8,8 @@ Persoonlijke ontwikkelomgeving configuratie, gesynchroniseerd via Git.
 |---------|------|
 | `.claude/CLAUDE.md` | Globale Claude Code instructies (Rails conventions, Fizzy als referentie) |
 | `.claude/commands/dotfiles.md` | `/dotfiles` slash command — setup en merge op nieuwe machines |
-| `install.sh` | Bootstrap script — maakt symlinks en kloont repos |
+| `.claude/commands/dotfiles-scan.md` | `/dotfiles-scan` slash command — scant bestaande dotfiles en voegt toe aan repo |
+| `install.sh` | Bootstrap script — symlinkt CLAUDE.md, kopieert commands, kloont repos |
 
 ## Nieuwe machine opzetten
 
@@ -20,8 +21,8 @@ bash <(curl -fsSL https://raw.githubusercontent.com/Geert/dotfiles/main/install.
 
 Dit doet:
 - Kloont deze repo naar `~/code/dotfiles`
-- Symlinkт `~/.claude/CLAUDE.md` → dotfiles
-- Symlinkт `~/.claude/commands/` → dotfiles (maakt `/dotfiles` beschikbaar)
+- Symlinkt `~/.claude/CLAUDE.md` → dotfiles
+- Kopieert slash commands naar `~/.claude/commands/` (echte bestanden, geen symlink)
 - Kloont `appfabriek-rails-template` naar `~/code/appfabriek-rails-template`
 - Maakt backups van bestaande bestanden vóór ze worden overschreven
 
@@ -45,9 +46,10 @@ Op machines die al zijn opgezet: `git -C ~/code/dotfiles pull` om de laatste ver
 
 ```bash
 git -C ~/code/dotfiles pull
+~/code/dotfiles/install.sh
 ```
 
-Symlinks wijzen al naar de dotfiles — na een pull zijn alle wijzigingen direct actief.
+`CLAUDE.md` werkt via een symlink en is direct actief na de pull. Slash commands zijn gekopieerde bestanden — `install.sh` synchroniseert ze.
 
 ---
 
@@ -65,7 +67,7 @@ git commit -am "Update Claude conventions: ..."
 git push
 ```
 
-Op andere machines: `git -C ~/code/dotfiles pull` — geen verdere actie nodig.
+Op andere machines: `git -C ~/code/dotfiles pull && ~/code/dotfiles/install.sh`
 
 ---
 
@@ -82,10 +84,10 @@ Zie [appfabriek-rails-template](https://github.com/Geert/appfabriek-rails-templa
 ## Architectuur
 
 ```
-~/.claude/CLAUDE.md          →  symlink  →  ~/code/dotfiles/.claude/CLAUDE.md
-~/.claude/commands/          →  symlink  →  ~/code/dotfiles/.claude/commands/
-~/code/dotfiles/             →  git remote  →  github.com/Geert/dotfiles
-~/code/appfabriek-rails-template/  →  git remote  →  github.com/Geert/appfabriek-rails-template
+~/.claude/CLAUDE.md               →  symlink  →  ~/code/dotfiles/.claude/CLAUDE.md
+~/.claude/commands/*.md           →  kopie    →  ~/code/dotfiles/.claude/commands/*.md
+~/code/dotfiles/                  →  git      →  github.com/Geert/dotfiles
+~/code/appfabriek-rails-template/ →  git      →  github.com/Geert/appfabriek-rails-template
 ```
 
 Het `/dotfiles` slash command is beschikbaar in elke Claude Code sessie op elke machine waar `install.sh` is gedraaid.
