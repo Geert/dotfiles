@@ -92,7 +92,7 @@ if [ -d "$HOME/code/appfabriek-rails-template" ]; then
   echo "  ✓ Updated existing clone"
 else
   mkdir -p "$HOME/code"
-  git clone git@github.com:Geert/appfabriek-rails-template.git "$HOME/code/appfabriek-rails-template"
+  git clone https://github.com/Geert/appfabriek-rails-template.git "$HOME/code/appfabriek-rails-template"
   echo "  ✓ Cloned appfabriek-rails-template"
 fi
 
