@@ -94,21 +94,22 @@ echo "→ Setting up Claude Code configuration..."
 mkdir -p "$HOME/.claude"
 safe_link "$DOTFILES_DIR/.claude/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
 
-# Slash commands — echte directory met per-bestand symlinks
-# (Claude Code volgt geen directory-symlinks bij het ontdekken van commands)
+# Slash commands — kopieer command bestanden naar ~/.claude/commands/
+# Geen symlinks: gewoon echte bestanden die Claude Code altijd kan lezen.
+# Na een dotfiles update: install.sh opnieuw draaien om te synchroniseren.
 if [ -L "$HOME/.claude/commands" ]; then
-  echo "  ⚠ ~/.claude/commands is een symlink — wordt omgezet naar echte directory..."
+  echo "  ⚠ ~/.claude/commands is een symlink — wordt verwijderd..."
   rm "$HOME/.claude/commands"
 fi
 mkdir -p "$HOME/.claude/commands"
 for cmd_file in "$DOTFILES_DIR/.claude/commands"/*.md; do
   cmd_name="$(basename "$cmd_file")"
   dest="$HOME/.claude/commands/$cmd_name"
-  if [ -L "$dest" ] && [ "$(readlink "$dest")" = "$cmd_file" ]; then
-    echo "  ✓ ~/.claude/commands/$cmd_name (already linked)"
+  if [ -f "$dest" ] && diff -q "$cmd_file" "$dest" > /dev/null 2>&1; then
+    echo "  ✓ ~/.claude/commands/$cmd_name (up to date)"
   else
-    ln -sf "$cmd_file" "$dest"
-    echo "  ✓ ~/.claude/commands/$cmd_name → dotfiles"
+    cp "$cmd_file" "$dest"
+    echo "  ✓ ~/.claude/commands/$cmd_name (gekopieerd)"
   fi
 done
 
