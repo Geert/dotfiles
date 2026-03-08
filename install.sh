@@ -94,16 +94,23 @@ echo "→ Setting up Claude Code configuration..."
 mkdir -p "$HOME/.claude"
 safe_link "$DOTFILES_DIR/.claude/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
 
-# Slash commands — symlink de hele commands directory
-if [ -L "$HOME/.claude/commands" ] && [ "$(readlink "$HOME/.claude/commands")" = "$DOTFILES_DIR/.claude/commands" ]; then
-  echo "  ✓ ~/.claude/commands (already linked)"
-elif [ -d "$HOME/.claude/commands" ] && [ ! -L "$HOME/.claude/commands" ]; then
-  echo "  ⚠ ~/.claude/commands bestaat al als directory — handmatig samenvoegen nodig"
-  echo "     ls $HOME/.claude/commands"
-else
-  ln -sf "$DOTFILES_DIR/.claude/commands" "$HOME/.claude/commands"
-  echo "  ✓ ~/.claude/commands → dotfiles (slash commands beschikbaar)"
+# Slash commands — echte directory met per-bestand symlinks
+# (Claude Code volgt geen directory-symlinks bij het ontdekken van commands)
+if [ -L "$HOME/.claude/commands" ]; then
+  echo "  ⚠ ~/.claude/commands is een symlink — wordt omgezet naar echte directory..."
+  rm "$HOME/.claude/commands"
 fi
+mkdir -p "$HOME/.claude/commands"
+for cmd_file in "$DOTFILES_DIR/.claude/commands"/*.md; do
+  cmd_name="$(basename "$cmd_file")"
+  dest="$HOME/.claude/commands/$cmd_name"
+  if [ -L "$dest" ] && [ "$(readlink "$dest")" = "$cmd_file" ]; then
+    echo "  ✓ ~/.claude/commands/$cmd_name (already linked)"
+  else
+    ln -sf "$cmd_file" "$dest"
+    echo "  ✓ ~/.claude/commands/$cmd_name → dotfiles"
+  fi
+done
 
 # ── AppFabriek Rails Template ─────────────────────────────────────────────────
 
