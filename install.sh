@@ -7,6 +7,25 @@ set -e
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKUP_DIR="$HOME/.dotfiles-backup-$(date +%Y%m%d-%H%M%S)"
 
+# ── GitHub SSH host key ───────────────────────────────────────────────────────
+# GitHub rotated their RSA key in March 2023. Fix stale known_hosts entries.
+
+if ssh-keygen -F github.com 2>/dev/null | grep -q "RSA"; then
+  CURRENT=$(ssh-keygen -F github.com 2>/dev/null | grep -A1 "github.com" | tail -1)
+  # Known good GitHub RSA fingerprint (post-March 2023 rotation)
+  if ! ssh-keygen -l -f <(ssh-keygen -F github.com 2>/dev/null) 2>/dev/null | grep -q "uNiVztksCsDhcc0u9e8BujQXVUpKZIDTMczCvj3tD2s"; then
+    echo "→ Oud GitHub SSH host key gevonden — wordt bijgewerkt..."
+    ssh-keygen -R github.com 2>/dev/null
+    ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+    echo "  ✓ GitHub SSH host key bijgewerkt"
+  fi
+elif ! ssh-keygen -F github.com 2>/dev/null | grep -q "github.com"; then
+  echo "→ GitHub SSH host key toevoegen..."
+  mkdir -p ~/.ssh && chmod 700 ~/.ssh
+  ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+  echo "  ✓ GitHub SSH host key toegevoegd"
+fi
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 safe_link() {
